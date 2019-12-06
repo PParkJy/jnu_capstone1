@@ -20,7 +20,14 @@ app.get('/', (req,res) => {
 
 app.post('/cal_rect', function(req,res){
 	console.log(req.body)
-	res.json({test:"res ok"})
+	var body = req.body
+
+	connection.query('INSERT IGNORE INTO jy_test (center_lat, center_lng, x,y) VALUES (?, ?, ?, ?)',[body.latitude,body.longitude,body.x,body.y] ,function(err,rows) {
+		if(err) throw err;
+		
+		console.log('DB save')
+	})
+	res.json({test:"server ok"})
 })
 
 app.get('/test',(req,res) => {
