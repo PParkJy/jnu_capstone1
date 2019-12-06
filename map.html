@@ -5,27 +5,139 @@
     <title>capstone_map</title>
 </head>
 <body>
-<div id="map" style="width:100%; height:500px;"></div>
-
+<div id="map" style="width:100%; height:800px;"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
 <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=549e7d5c403ea6ae5f8a1fd7490c79c1"></script>
 <script>
 var mapContainer = document.getElementById('map'), // 지도를 표시할 div
     mapOption = {
         center: new kakao.maps.LatLng(35.179791, 126.908186), // 지도의 중심좌표
-        level: 3 // 지도의 확대 레벨
+        level: 6 // 지도의 확대 레벨
     };
 
 var map = new kakao.maps.Map(mapContainer, mapOption); // 지도를 생성합니다
 
+$(function(){
+	$.ajax({
+		url: '/cal_rect',
+		type: 'POST',
+		data: {req: 'start'},
+		dataType: 'json',
+		success: function(res){
+			console.log(res)},
+		error: function(error){
+			console.log(err)
+		}
+	})
+	
+})
+
+lat = [35.168794,35.183424]
+lng = [126.891978,126.927023]
+
+var points = []
+var k = 0;
+for(var i =0; i<2;i++){
+	for(var j=0;j<2;j++){
+		points[k] = new kakao.maps.LatLng(lat[i],lng[j])
+		k++
+	}
+}
+
+var bounds = new kakao.maps.LatLngBounds();
+var marker;
+
+for(var i=0;i<points.length;i++){
+	marker = new kakao.maps.Marker({position : points[i]});
+	marker.setMap(map);
+	bounds.extend(points[i]);
+}
+
+function setBounds(){
+	map.setBounds(bounds);
+}
+
+setBounds()
+
+var sw = points[0], ne = points[3] //남서, 북동 좌표
+
+var rectangleBounds = new kakao.maps.LatLngBounds(sw, ne);
+
+var rectangle = new kakao.maps.Rectangle({
+    bounds: rectangleBounds, // 그려질 사각형의 영역정보입니다
+    strokeWeight: 4, // 선의 두께입니다
+    strokeColor: '#000000', // 선의 색깔입니다
+    strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+    strokeStyle: 'solid', // 선의 스타일입니다
+    fillColor: '#FF8AEF', // 채우기 색깔입니다
+    fillOpacity: 0 // 채우기 불투명도 입니다
+});
+
+// 지도에 사각형을 표시합니다
+rectangle.setMap(map);
+
+var N = 200
+var width = (lat[1] - lat[0]) / N //사각형 높이
+width = parseFloat(width).toFixed(14)
+var height = (lng[1] - lng[0]) / (2*N) //사각형 너비
+height = parseFloat(height).toFixed(14)
+
+var mini_lat = []
+var mini_lng = []
+var mini_points = []
+
+for(var i=0; i<N+1; i++){
+	mini_lat[i] = parseFloat(lat[0] + width*i).toFixed(14)}
+for(var i=0;i<2*N+1;i++){
+	mini_lng[i] = parseFloat(lng[0] + height*i).toFixed(14)
+	}
+
+var rect = []
+
+for(var i=0;i<2*N;i++){
+	for(var j=0;j<N;j++){
+		var s_w = new kakao.maps.LatLng(mini_lat[j],mini_lng[i]) //남서
+		var n_e = new kakao.maps.LatLng(mini_lat[j+1],mini_lng[i+1]) //북동
+		var rect_bounds = new kakao.maps.LatLngBounds(s_w, n_e)
+		var mini_rect = new kakao.maps.Rectangle({
+    			bounds: rect_bounds, // 그려질 사각형의 영역정보입니다
+   			strokeWeight: 2, // 선의 두께입니다
+   			strokeColor: '#000000', // 선의 색깔입니다
+    			strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+    			strokeStyle: 'solid', // 선의 스타일입니다
+    			fillColor: '#FFFFFF', // 채우기 색깔입니다
+    			fillOpacity: 0.1 // 채우기 불투명도 입니다
+		});
+		rect.push(mini_rect)
+	}
+}
+ 
+var fill_opt = {
+	fillColor: "#8B00FF",
+	fillOpacity: 0.5
+}
+
+rect.forEach(function(element){
+	element.setMap(map)
+})
+
+rect.forEach(function(e){
+	kakao.maps.event.addListener(e, 'click',function(){
+        	console.log(event)
+        	e.setOptions(fill_opt)
+	})
+})
+
+/*			       
 var x = 35.178632; //latitude
 var y = 126.912184; //longitude
-var r = 0.00003;//radius
+var r = 0.0003;//radius
 var n = 6;//hexagon
 var poly_x = new Array();//latitude empty array
 var poly_y = new Array();//longitude empty array
 
 function cal_poly(x,y,r){ //polygon location calculation
-	for(var i=0;i<n;i++){
+	for(var i = 0; i < n; i++){
   	poly_x[i] = x + r * Math.cos(2 * Math.PI * i / n)
   	poly_y[i] = y + r * Math.sin(2 * Math.PI * i / n)
 	}
@@ -38,6 +150,7 @@ var polygonPath = [];
 
 for(var i=0;i<n;i++){
 	polygonPath[i] = new kakao.maps.LatLng(poly_x[i],poly_y[i])
+	console.log(polygonPath[i])
 }
 
 // 지도에 표시할 다각형을 생성합니다
@@ -53,7 +166,7 @@ var polygon = new kakao.maps.Polygon({
 
 // 지도에 다각형을 표시합니다
 polygon.setMap(map);
-
+*/
 </script>
 </body>
 </html>

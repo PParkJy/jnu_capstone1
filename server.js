@@ -3,10 +3,24 @@ const mysql = require('mysql');
 const dbconfig = require('./config/database.js');
 const connection = mysql.createConnection(dbconfig);
 const app = express();
+const bodyParser = require('body-parser')
+const ejs = require('ejs')
+
 connection.connect();
-console.log('connect')
+app.set('views',__dirname+'/')
+app.set('view engine','ejs');
+app.engine('html', require('ejs').renderFile);
+app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.json())
+app.use(express.static(__dirname+'/'))
+
 app.get('/', (req,res) => {
-  res.sendFile(__dirname+'/map.html')
+  res.render('map.html')
+})
+
+app.post('/cal_rect', function(req,res){
+	console.log(req.body)
+	res.json({test:"res ok"})
 })
 
 app.get('/test',(req,res) => {
@@ -19,5 +33,5 @@ app.get('/test',(req,res) => {
 });
 
 app.listen(3000, () => {
-  console.log('3000번 포트에 http server를 띄웠습니다.')
+  console.log('3000번 포트로 서버 시작.')
 })
