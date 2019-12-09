@@ -6,7 +6,7 @@
 </head>
 <body>
 <!--지도의 크기를 너비는 스크린의 100%, 높이는 800px로
-	height:100% 적용 안됨  -->
+	width:100% 적용 안됨  -->
 <div id="map" style="width:100%; height:800px;"></div> 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script> <!--jquery 불러오기-->
 <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=549e7d5c403ea6ae5f8a1fd7490c79c1"></script> <!--카카오 api-->
@@ -47,7 +47,7 @@ function setBounds(){
 
 setBounds() //
 
-var sw = points[0], ne = points[3] //남서, 북동 좌표
+var sw = points[0], ne lat= points[3] //남서, 북동 좌표
 
 var rectangleBounds = new kakao.maps.LatLngBounds(sw, ne); //카카오 api에서 사각형을 그릴땐 사각형의 남서, 북동 좌표만 있으면 됨
 
@@ -66,23 +66,22 @@ rectangle.setMap(map);
 */
 
 var N = 200
-var width = (lat[1] - lat[0]) / N //사각형 높이
-width = parseFloat(width).toFixed(14)
-var height = (lng[1] - lng[0]) / (2*N) //사각형 너비
+var height = (lat[1] - lat[0]) / N //사각형 높이
 height = parseFloat(height).toFixed(14)
+var width = (lng[1] - lng[0]) / (2*N) //사각형 너비
+width = parseFloat(width).toFixed(14)
 
 var mini_lat = []
 var mini_lng = []
 var mini_points = []
 
 for(var i=0; i<N+1; i++){
-	mini_lat[i] = parseFloat(lat[0] + width*i).toFixed(14)}
+	mini_lat[i] = parseFloat(lat[0] + height*i).toFixed(14)}
 for(var i=0;i<2*N+1;i++){
-	mini_lng[i] = parseFloat(lng[0] + height*i).toFixed(14)
+	mini_lng[i] = parseFloat(lng[0] + width*i).toFixed(14)
 	}
 
 var rect = []
-var all = []
 
 for(var i=0;i<2*N;i++){
 	for(var j=0;j<N;j++){
@@ -111,10 +110,6 @@ var fill_opt = {
 	fillOpacity: 0.5
 }
 
-rect.forEach(function(element){
-	element.m_rect.setMap(map)
-})
-
 rect.forEach(function(e){
 	kakao.maps.event.addListener(e.m_rect, 'click',function(){
 			e.m_rect.setOptions(fill_opt)
@@ -126,19 +121,72 @@ rect.forEach(function(e){
 			console.log(center_lng)
 
 			$.ajax({
-		url: '/cal_rect',//서버의 cal_rect라는 라우트로 POST 방식을 통해 data 전송
-		type: 'POST',
-		data: {latitude:center_lat,longitude:center_lng,x:e.x,y:e.y},
-		dataType: 'json',
-		success: function(res){
-			console.log(res)},
-		error: function(error){
-			console.log(err)
-		}
+			url: '/cal_rect',//서버의 cal_rect라는 라우트로 POST 방식을 통해 data 전송
+			type: 'POST',
+			data: {latitude:center_lat,longitude:center_lng,x:e.x,y:e.y},
+			dataType: 'json',
+			success: function(res){
+				console.log(res)},
+			error: function(error){
+				console.log(err)
+			}
+		})
 	})
-	})
+	console.log("addlistener end");
+})
+
+rect.forEach(function(element){
+	element.m_rect.setMap(map)
+	console.log("settile end");
 })
 
 </script>
+<!-- 맵 Open-->
+<!-- 격자 On/Off 버튼 -->
+<script language = 'javascript'>
+	function tileMapOff(){
+		rect.forEach(function(element){
+		element.m_rect.setMap(null);
+		console.log("delete tileMap");
+		})
+	}
+
+	function showRoadTile(){
+		//console.log("showRoadTile");
+		$.ajax({
+			url: '/showRoadTile',//서버의 cal_rect라는 라우트로 POST 방식을 통해 data 전송
+			type: 'POST',
+			data: {},
+			dataType: 'json',
+			success: function(res){
+				res.forEach(element => {
+					//console.log(res[0].x)}
+					var sw = new kakao.maps.LatLng(element.lat + height/2, element.lng + width/2);
+					var ne = new kakao.maps.LatLng(element.lat - height/2, element.lng - width/2);
+
+					var rectangleBounds = new kakao.maps.LatLngBounds(sw, ne);
+
+					var rectangle = new kakao.maps.Rectangle({
+						bounds: rectangleBounds, // 그려질 사각형의 영역정보입니다
+						strokeWeight: 2, // 선의 두께입니다
+						strokeColor: '#0096c6', // 선의 색깔입니다
+						strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+						strokeStyle: 'solid', // 선의 스타일입니다
+						fillColor: '#00a3d2', // 채우기 색깔입니다
+						fillOpacity: 0.3 // 채우기 불투명도 입니다
+					});
+					rectangle.setMap(map);
+				});
+			},
+			error: function(error){
+				console.log(err)
+			}
+	})}
+</script>
+
+<form>
+	<input type='button' value='tileMapOff' onclick='tileMapOff()'>
+	<input type='button' value='showRoadTile' onclick='showRoadTile()'>
+</form>
 </body>
 </html>

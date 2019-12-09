@@ -32,14 +32,14 @@ app.post('/cal_rect', function(req,res){
 	var body = req.body 
 	//IGNORE -> DB 테이블에 중복된 정보가 존재한다면 지금 넣는 정보 무시
 	// 내 mysql DB 연결 정보는 config폴더의 database.js 참고
-	// 테이블명은 jy_test로 만들었음
+	// 테이블명은 tile로 만들었음
 	// center_lat DOUBLE not null
 	// center_lng DOUBLE not null
 	// x INT(11? 사이즈 생각안남) not null
 	// y INT(사이즈 모름) not null
 	//PRIMARY KEY(x,y)
 	//나는 x,y를 primary key로 설정했기 때문에 x,y 비교로 중복 정보 판단 가능
-	connection.query('INSERT IGNORE INTO jy_test (center_lat, center_lng, x, y) VALUES (?,?,?,?)',[body.latitude,body.longitude,body.x,body.y], function(err,rows) {
+	connection.query('INSERT IGNORE INTO tile (lat, lng, x, y) VALUES (?,?,?,?)',[body.latitude,body.longitude,body.x,body.y], function(err,rows) {
                 if(err) throw err;
 
 		console.log('DB stored'); //DB에 잘 저장됨
@@ -49,12 +49,12 @@ app.post('/cal_rect', function(req,res){
 
 //DB의 모든 정보 확인해보기위해 설정한 /test 라우트
 //192.168.0.39:3000/test로 접속해서 확인
-app.get('/test',(req,res) => {
-	connection.query('SELECT * from jy_test', function(err,rows) {
+app.post('/showRoadTile', (req, res) => {
+	connection.query('SELECT * from tile', function(err,rows) {
 		if(err) throw err;
 
 		//rows -> select의 결과
-		console.log('The solution is: ',rows);
+		//console.log('The solution is: ',rows);
 		res.send(rows);
 	})
 });
