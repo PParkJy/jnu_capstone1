@@ -255,8 +255,9 @@ trafficTile.forEach(function(e){
 	function submitTileInfo() {
 		if(showingTile != null){
 			showingTile.forEach(function(e){
-				e.setMap(null);
+				e.rect.setMap(null);
 			})
+			showingTile = []
 		}
 		$.ajax({
 			url: '/findPath',//서버의 cal_rect라는 라우트로 POST 방식을 통해 data 전송
@@ -282,7 +283,13 @@ trafficTile.forEach(function(e){
 						fillColor: '#000000', // 채우기 색깔입니다
 						fillOpacity: 1 // 채우기 불투명도 입니다
 					});
-					showingTile.push(rectangle);
+					var bind = new Object();
+					bind.rect = rectangle
+					bind.x = e.x
+					bind.y = e.y
+					bind.lat = valueObj.swlat;
+					bind.lng = valueObj.swlng;
+					showingTile.push(bind);
 					rectangle.setMap(map);
 				})
 				whosTurn = 0;			
@@ -329,15 +336,25 @@ e.m_rect.setOptions(fill_opt)
 		})
 	}
 
+	var carAnimate;
+	var car = new Object();
+	var carRender;
+	var drones = []
 	function StartMove() {
 		//자동차 객체 생성
-		var searchTile = rect.get("x_" + clickedSP.x + "y_" + clickedSP.y)
-		console.log(searchTile);
-		var lat = searchTile.lat;
-		var lng = searchTile.lng;
-		var circle = new kakao.maps.Circle({
+		//var searchTile = rect.get("x_" + clickedSP.x + "y_" + clickedSP.y)
+		car.iter = 0;
+		car.x = showingTile[car.iter].x
+		car.y = showingTile[car.iter].y
+		//car.x = searchTile.x;
+		//car.y = searchTile.y;
+		var lat = showingTile[car.iter].lat//searchTile.lat;
+		lat = parseFloat(lat).toFixed(14)
+		var lng = showingTile[car.iter].lng//searchTile.lng;
+		lng = parseFloat(lng).toFixed(14)
+		carRender = new kakao.maps.Circle({
 			center : new kakao.maps.LatLng(lat, lng),  // 원의 중심좌표 입니다 
-			radius: 50, // 미터 단위의 원의 반지름입니다 
+			radius: 20, // 미터 단위의 원의 반지름입니다 
 			strokeWeight: 5, // 선의 두께입니다 
 			strokeColor: '#75B8FA', // 선의 색깔입니다
 			strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
@@ -345,15 +362,38 @@ e.m_rect.setOptions(fill_opt)
 			fillColor: '#CFE7FF', // 채우기 색깔입니다
 			fillOpacity: 0.7  // 채우기 불투명도 입니다   
 		}); 
-		circle.setMap(map);
+		carRender.setMap(map);
 		//자동차 에니메이션 시작
+		moveCar();
+
 		//드론 객체 생성
 		//드론 목적지 설정
+		
 		//드론 path 표시
 		//드론 에니메이션 시작
 		
+		//자동차, 드론 객체 제거
+		//circle.setMap(null);
 		document.getElementById("sp").value = "(x, y)";
 		document.getElementById("ep").value = "(x, y)";			
+	}
+
+	function moveCar() {
+		//일정시간마다 showingTile 의 다음타일을 따라가자
+		car.iter += 1;
+		car.x = showingTile[car.iter].x;
+		car.y = showingTile[car.iter].y;
+		var lat = showingTile[car.iter].lat
+		lat = parseFloat(lat).toFixed(14)
+		var lng = showingTile[car.iter].lng
+		lng = parseFloat(lng).toFixed(14)
+
+		carRender.setOptions({ center: new kakao.maps.LatLng(lat, lng) })
+
+		//정지
+		if(car.iter == Object.keys(showingTile).length -1) { clearTimeout(carAnimate) };
+
+		carAnimate = setTimeout(moveCar, 50);
 	}
 </script>
 
