@@ -9,6 +9,8 @@ const app = express();
 const bodyParser = require('body-parser')
 const ejs = require('ejs') // -> npm install ejs (했는지 안했는지 기억안남)
 
+const astar = require('./astar.js');
+
 //mysql db 연결
 connection.connect();
 
@@ -47,6 +49,21 @@ app.post('/cal_rect', function(req,res){
 	res.json({test:"server ok"}) //map.html로 server ok라는 답장 전송
 })
 
+var arrToAstarGraph = Array(400).fill(null).map(() => Array(200).fill(0)); //arr[x][y](x: 400, y: 200)
+var graphToAstar;
+connection.query('SELECT * from tile', function(err,rows) {
+	if(err) throw err;
+
+	//rows -> select의 결과
+	//console.log('The solution is: ',rows);
+	rows.forEach(tile => {
+		arrToAstarGraph[tile.x][tile.y] = 1;
+	});
+	graphToAstar = new astar.Graph(
+		arrToAstarGraph
+	, { diagonal: true });
+})
+
 //DB의 모든 정보 확인해보기위해 설정한 /test 라우트
 //192.168.0.39:3000/test로 접속해서 확인
 app.post('/showRoadTile', (req, res) => {
@@ -58,6 +75,15 @@ app.post('/showRoadTile', (req, res) => {
 		res.send(rows);
 	})
 });
+
+app.post('/findPath', (req, res) => {
+	var start = graphToAstar.grid[req.body.sp_x][req.body.sp_y]
+	var end = graphToAstar.grid[req.body.ed_x][req.body.ed_y]
+
+	var path = astar.astar.search(graphToAstar, start, end, { heuristics: astar.astar.heuristics.diagonal });
+	if(path == null) { res.send("No Path!"); }
+	else { res.send(path); }
+})
 
 app.listen(3000, () => {
   console.log('3000번 포트로 서버 시작.')

@@ -21,8 +21,8 @@ var map = new kakao.maps.Map(mapContainer, mapOption); // 지도 생성
 
 lat = [35.168794,35.183424] //내가 임의적으로 잡은 사각형의 위도 정보 
 lng = [126.891978,126.927023] //내가 임의적으로 잡은 사각형의 경도 정보
-
-/* -> 걍 큰 사각형 보여주는 거..
+/*
+//걍 큰 사각형 보여주는 거..
 var points = []
 var k = 0;
 for(var i =0; i<2;i++){
@@ -47,7 +47,7 @@ function setBounds(){
 
 setBounds() //
 
-var sw = points[0], ne lat= points[3] //남서, 북동 좌표
+var sw = points[0], ne = points[3] //남서, 북동 좌표
 
 var rectangleBounds = new kakao.maps.LatLngBounds(sw, ne); //카카오 api에서 사각형을 그릴땐 사각형의 남서, 북동 좌표만 있으면 됨
 
@@ -62,26 +62,35 @@ var rectangle = new kakao.maps.Rectangle({
 });
 
 // 지도에 사각형을 표시
-rectangle.setMap(map);
-*/
+rectangle.setMap(map);*/
+
 
 var N = 200
+
 var height = (lat[1] - lat[0]) / N //사각형 높이
 height = parseFloat(height).toFixed(14)
 var width = (lng[1] - lng[0]) / (2*N) //사각형 너비
 width = parseFloat(width).toFixed(14)
 
+var trafficTile_height = (lat[1] - lat[0]) / (N / 16)
+trafficTile_height = parseFloat(trafficTile_height).toFixed(14)
+var trafficTile_width = (lng[1] - lng[0]) / (2* N / 16)
+trafficTile_width = parseFloat(trafficTile_width).toFixed(14)
+
 var mini_lat = []
 var mini_lng = []
-var mini_points = []
 
-for(var i=0; i<N+1; i++){
-	mini_lat[i] = parseFloat(lat[0] + height*i).toFixed(14)}
-for(var i=0;i<2*N+1;i++){
-	mini_lng[i] = parseFloat(lng[0] + width*i).toFixed(14)
-	}
+var trafficTile_lat = []
+var trafficTile_lng = []
 
-var rect = []
+for(var i=0; i<N+1; i++){ mini_lat[i] = parseFloat(lat[0] + height*i).toFixed(14); }
+for(var i=0;i<2*N+1;i++){ mini_lng[i] = parseFloat(lng[0] + width*i).toFixed(14); }
+for(var i=0; i < ( N / 16 ) +1; i++) { trafficTile_lat[i] = parseFloat(lat[0] + trafficTile_height*i).toFixed(14); }
+for(var i=0; i < ( 2 * N / 16) +1; i++) { trafficTile_lng[i] = parseFloat(lng[0] + trafficTile_width*i).toFixed(14); }
+
+//var rect = []
+let rect = new Map();
+let trafficTile = new Map();
 
 for(var i=0;i<2*N;i++){
 	for(var j=0;j<N;j++){
@@ -89,19 +98,55 @@ for(var i=0;i<2*N;i++){
 		var n_e = new kakao.maps.LatLng(mini_lat[j+1],mini_lng[i+1]) //북동
 		var rect_bounds = new kakao.maps.LatLngBounds(s_w, n_e)
 		var mini_rect = new kakao.maps.Rectangle({
-    			bounds: rect_bounds, // 그려질 사각형의 영역정보
+    		bounds: rect_bounds, // 그려질 사각형의 영역정보
    			strokeWeight: 2, // 선의 두께
    			strokeColor: '#000000', // 선의 색깔
-    			strokeOpacity: 1, // 선의 불투명도 (0에 가까울수록 투명)
-    			strokeStyle: 'solid', // 선의 스타일
-    			fillColor: '#FFFFFF', // 채우기 색깔
-    			fillOpacity: 0.1 // 채우기 불투명
+    		strokeOpacity: 1, // 선의 불투명도 (0에 가까울수록 투명)
+    		strokeStyle: 'solid', // 선의 스타일
+    		fillColor: '#FFFFFF', // 채우기 색깔
+    		fillOpacity: 0.1 // 채우기 불투명
 		});
 		var bind = new Object();
 		bind.m_rect = mini_rect;
 		bind.x = i; //x좌표
 		bind.y = j; //y좌표
-		rect.push(bind)
+		bind.lat = mini_lat[j] + (height / 2);
+		bind.lng = mini_lng[i] + (width / 2);
+		bind.swlat = mini_lat[j]
+		bind.swlng = mini_lng[i]
+		bind.nelat = mini_lat[j+1]
+		bind.nelng = mini_lng[i+1]
+		//rect.push(bind)
+		rect.set("x_" + i + "y_" + j,bind);
+	}
+}
+
+//trafficTile 사각형 객체 설정
+for(var i = 0; i < (2 * N / 16); i++){
+	for(var j = 0; j < (N / 16); j++){
+		var s_w = new kakao.maps.LatLng(trafficTile_lat[j], trafficTile_lng[i]);
+		var n_e = new kakao.maps.LatLng(trafficTile_lat[j+1], trafficTile_lng[i+1]);
+		var rect_bounds = new kakao.maps.LatLngBounds(s_w, n_e);
+		var _trafficTile = new kakao.maps.Rectangle({
+			bounds: rect_bounds,
+			strokeWeight: 2,
+			strokeColor: '#000000',
+			strokeOpacity: 1,
+			strokeStyle: 'solid',
+			fillColor: '#FF0000',
+			fillOpacity: 0.1
+		});
+		var binding = new Object();
+		binding.trafficTile = _trafficTile;
+		binding.x = i;
+		binding.y = j;
+		binding.swlat = trafficTile_lat[j]
+		binding.swlng = trafficTile_lng[i]
+		binding.nelat = trafficTile_lat[j+1]
+		binding.nelng = trafficTile_lng[i+1]
+		binding.traffic = 0;
+
+		trafficTile.set("x_" + i + "y_" + j, binding);
 	}
 }
 
@@ -109,7 +154,7 @@ var fill_opt = {
 	fillColor: "#8B00FF",
 	fillOpacity: 0.5
 }
-
+/*
 rect.forEach(function(e){
 	kakao.maps.event.addListener(e.m_rect, 'click',function(){
 			e.m_rect.setOptions(fill_opt)
@@ -137,7 +182,11 @@ rect.forEach(function(e){
 
 rect.forEach(function(element){
 	element.m_rect.setMap(map)
-	console.log("settile end");
+	console.log("setting end");
+})*/
+
+trafficTile.forEach(function(e){
+	e.trafficTile.setMap(map);
 })
 
 </script>
@@ -151,6 +200,9 @@ rect.forEach(function(element){
 		})
 	}
 
+	var whosTurn = 0;//0이면 sp, 1이면 ep
+	var clickedSP = new Object();
+	var clickedEP = new Object();
 	function showRoadTile(){
 		//console.log("showRoadTile");
 		$.ajax({
@@ -175,6 +227,22 @@ rect.forEach(function(element){
 						fillColor: '#00a3d2', // 채우기 색깔입니다
 						fillOpacity: 0.3 // 채우기 불투명도 입니다
 					});
+					kakao.maps.event.addListener(rectangle, 'click', function(){
+						if(whosTurn == 0)
+						{
+							document.getElementById("sp").value = element.x + ", " + element.y;
+							clickedSP.x = element.x;
+							clickedSP.y = element.y;
+							whosTurn = 1;
+						}
+						else if(whosTurn == 1)
+						{
+							document.getElementById("ep").value = element.x + ", " + element.y;
+							clickedEP.x = element.x;
+							clickedEP.y = element.y;
+							whosTurn = 0;
+						}
+					})
 					rectangle.setMap(map);
 				});
 			},
@@ -182,11 +250,129 @@ rect.forEach(function(element){
 				console.log(err)
 			}
 	})}
+
+	var showingTile = [];
+	function submitTileInfo() {
+		if(showingTile != null){
+			showingTile.forEach(function(e){
+				e.setMap(null);
+			})
+		}
+		$.ajax({
+			url: '/findPath',//서버의 cal_rect라는 라우트로 POST 방식을 통해 data 전송
+			type: 'POST',
+			data: {sp_x: clickedSP.x, sp_y: clickedSP.y, ed_x: clickedEP.x, ed_y: clickedEP.y},
+			dataType: 'json',
+			success: function(res){
+				res.forEach(function(e){
+					var keyStr = "x_" + e.x + "y_" + e.y;
+					var valueObj = rect.get(keyStr);
+
+					var sw = new kakao.maps.LatLng(valueObj.swlat, valueObj.swlng);
+					var ne = new kakao.maps.LatLng(valueObj.nelat, valueObj.nelng);
+
+					var rectangleBounds = new kakao.maps.LatLngBounds(sw, ne);
+
+					var rectangle = new kakao.maps.Rectangle({
+						bounds: rectangleBounds, // 그려질 사각형의 영역정보입니다
+						strokeWeight: 2, // 선의 두께입니다
+						strokeColor: '#000000', // 선의 색깔입니다
+						strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+						strokeStyle: 'solid', // 선의 스타일입니다
+						fillColor: '#000000', // 채우기 색깔입니다
+						fillOpacity: 1 // 채우기 불투명도 입니다
+					});
+					showingTile.push(rectangle);
+					rectangle.setMap(map);
+				})
+				whosTurn = 0;			
+			},
+			error: function(error){
+				console.log(err)
+		}})
+	}
+/*
+	var fill_opt = {
+	fillColor: "#8B00FF",
+	fillOpacity: 0.5
+}
+e.m_rect.setOptions(fill_opt)
+*/
+
+	function PutRandomTraffic() {
+		trafficTile.forEach(function(e){
+			var randomValue = Math.floor(Math.random() * 100);
+			if(randomValue >= 0 && randomValue <= 4)
+				randomValue = 0
+			else if(randomValue >= 5 && randomValue <= 14)
+				randomValue = 1
+			else if(randomValue >= 15 && randomValue <= 29)
+				randomValue = 2
+			else if(randomValue >= 30 && randomValue <= 49)
+				randomValue = 3
+			else if(randomValue >= 50 && randomValue <= 64)
+				randomValue = 4
+			else if(randomValue >= 65 && randomValue <= 74)
+				randomValue = 5
+			else if(randomValue >= 75 && randomValue <= 82)
+				randomValue = 6
+			else if(randomValue >= 83 && randomValue <= 88)
+				randomValue = 7
+			else if(randomValue >= 89 && randomValue <= 94)
+				randomValue = 8
+			else if(randomValue >= 95 && randomValue <= 99)
+				randomValue = 9
+			else
+				console.log("error!!!");
+			e.traffic = randomValue;
+			e.trafficTile.setOptions({fillOpacity: e.traffic / 10})
+		})
+	}
+
+	function StartMove() {
+		//자동차 객체 생성
+		var searchTile = rect.get("x_" + clickedSP.x + "y_" + clickedSP.y)
+		console.log(searchTile);
+		var lat = searchTile.lat;
+		var lng = searchTile.lng;
+		var circle = new kakao.maps.Circle({
+			center : new kakao.maps.LatLng(lat, lng),  // 원의 중심좌표 입니다 
+			radius: 50, // 미터 단위의 원의 반지름입니다 
+			strokeWeight: 5, // 선의 두께입니다 
+			strokeColor: '#75B8FA', // 선의 색깔입니다
+			strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+			strokeStyle: 'dashed', // 선의 스타일 입니다
+			fillColor: '#CFE7FF', // 채우기 색깔입니다
+			fillOpacity: 0.7  // 채우기 불투명도 입니다   
+		}); 
+		circle.setMap(map);
+		//자동차 에니메이션 시작
+		//드론 객체 생성
+		//드론 목적지 설정
+		//드론 path 표시
+		//드론 에니메이션 시작
+		
+		document.getElementById("sp").value = "(x, y)";
+		document.getElementById("ep").value = "(x, y)";			
+	}
 </script>
 
 <form>
 	<input type='button' value='tileMapOff' onclick='tileMapOff()'>
-	<input type='button' value='showRoadTile' onclick='showRoadTile()'>
+	&nbsp;&nbsp;&nbsp;<input type='button' value='showRoadTile' onclick='showRoadTile()'>
+	&nbsp;&nbsp;&nbsp;<input type='button' value='RandomTraffic' onclick='PutRandomTraffic()'><br>
 </form>
+<!-- 타일 클릭을 통해 두개의 좌표값 텍스트 상자로 받음, 이후 제출을 누르면 길찾기 -->
+<form>
+	start point:
+	<input type="text" name="startPoint" id="sp" placeholder="(x, y)">
+	&nbsp;&nbsp;&nbsp;end point:
+	<input type="text" name="endPoint" id="ep" placeholder="(x, y)">
+	<input type="button" value="Find Path" onclick=submitTileInfo()>
+</form>
+<form>
+	<input type='button' value='StartMove' onclick='StartMove()'>
+</form>
+
 </body>
 </html>
