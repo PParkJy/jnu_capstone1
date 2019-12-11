@@ -50,7 +50,10 @@ app.post('/cal_rect', function(req,res){
 })
 
 var arrToAstarGraph = Array(400).fill(null).map(() => Array(200).fill(0)); //arr[x][y](x: 400, y: 200)
+var arrToDroneGraph = Array(400).fill(null).map(() => Array(200).fill(1)); //arr[x][y](x: 400, y: 200)
 var graphToAstar;
+var graphToDrone = new astar.Graph(
+	arrToDroneGraph );
 connection.query('SELECT * from tile', function(err,rows) {
 	if(err) throw err;
 
@@ -60,8 +63,8 @@ connection.query('SELECT * from tile', function(err,rows) {
 		arrToAstarGraph[tile.x][tile.y] = 1;
 	});
 	graphToAstar = new astar.Graph(
-		arrToAstarGraph
-	, { diagonal: true });
+		arrToAstarGraph,
+		{ diagonal: true });
 })
 
 //DB의 모든 정보 확인해보기위해 설정한 /test 라우트
@@ -81,6 +84,15 @@ app.post('/findPath', (req, res) => {
 	var end = graphToAstar.grid[req.body.ed_x][req.body.ed_y]
 
 	var path = astar.astar.search(graphToAstar, start, end, { heuristics: astar.astar.heuristics.diagonal });
+	if(path == null) { res.send("No Path!"); }
+	else { res.send(path); }
+})
+
+app.post('/findDronePath', (req, res) => {
+	var start = graphToDrone.grid[req.body.sp_x][req.body.sp_y]
+	var end = graphToDrone.grid[req.body.ed_x][req.body.ed_y]
+
+	var path = astar.astar.search(graphToDrone, start, end);
 	if(path == null) { res.send("No Path!"); }
 	else { res.send(path); }
 })
